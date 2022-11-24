@@ -1,0 +1,103 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: |
+  S3 static webhosting cloudfront route53.
+  -parametre olarak dns hostikzone ve static webde kullanılacak subdomian ismini aldık. 
+  -S3 de waynes3 bucketı oluştuyoruz. Buketa domain name önüne wayne eklenmiş şekilde isim verdik.
+  (wayne.wayneport.site)
+  -Bucket için public policy oluşturduk. Bucket arn ile bucket ismini join yaptık.
+  -cloudfronttan önce subdomian (WayneDomainName) için bir certifika aldık. 
+  -cloudfront creat ettik. siprit "https://" yi sildi
+  -create record. A type record. domain namei aldık.. hostedzoneid.documantasyon alındı fix, domainname cloudfrontde. 
+  -output
+Parameters:
+  DomainName:
+    Description: DNS Name of existing Amazon Route 53 hosted zone ex. wayneport.site
+    Type: AWS::Route53::HostedZone::Id
+  WayneDomainName:
+    Description: Full domain name for the App. ex. wayne.wayneport.site
+    Type: String
+    AllowedPattern: (?!-)[a-zA-Z0-9-.]{1,63}(?<!-)  
+
+Resources:
+  WayneBucket:
+    Type: AWS::S3::Bucket
+    Properties: 
+      AccessControl: PublicRead
+      BucketName: !Ref WayneDomainName
+      WebsiteConfiguration: 
+        IndexDocument: index.html
+  
+  WaynesBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref WayneBucket
+      PolicyDocument:     
+        Statement:
+          - Sid: PublicReadforStaticWebsite
+            Effect: Allow
+            Principal: '*'
+            Action: s3:GetObject
+            Resource: !Join ['', ['arn:aws:s3:::', !Ref 'WayneBucket', /*]]
+
+  WayneCertificate:
+    Type: AWS::CertificateManager::Certificate
+    Properties:
+      CertificateTransparencyLoggingPreference: ENABLED
+      DomainName: !Ref WayneDomainName
+      DomainValidationOptions:
+        - DomainName: !Ref WayneDomainName
+          HostedZoneId: !Ref DomainName
+      ValidationMethod: DNS
+
+  WayneCloudfront:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Aliases:
+        - !Ref WayneDomainName
+        Comment: Cloudfront Distribution pointing to Wayne S3 bucket
+        DefaultCacheBehavior: 
+          AllowedMethods:
+            - GET
+            - HEAD
+          Compress: true
+          ForwardedValues:
+            QueryString: true
+            Cookies:
+              Forward: none
+          TargetOriginId: WayneOrigin
+          ViewerProtocolPolicy: allow-all
+        DefaultRootObject: index.html
+        Enabled: true
+        HttpVersion: 'http2'
+        Origins:
+        - DomainName: !Select [2, !Split ["/", !GetAtt WayneBucket.WebsiteURL]]
+          Id: WayneOrigin
+          CustomOriginConfig:
+            OriginProtocolPolicy: http-only
+        PriceClass: PriceClass_All
+        ViewerCertificate:
+          AcmCertificateArn: !Ref WayneCertificate
+          SslSupportMethod: sni-only
+
+  WayneRecordSet:
+    Type: AWS::Route53::RecordSetGroup
+    Properties:
+      HostedZoneId: !Ref DomainName
+      RecordSets: 
+        - Name: !Ref WayneDomainName
+          Type: A
+          AliasTarget:
+            DNSName: !GetAtt WayneCloudfront.DomainName
+            HostedZoneId: Z2FDTNDATAQYW2
+            
+Outputs:
+  BucketName: 
+    Description: S3 Bucket URL for Wayne Website
+    Value: !GetAtt WayneBucket.WebsiteURL
+  CloudfrontEndpoint:
+    Description: Endpoint for Wayne Cloudfront
+    Value: !GetAtt WayneCloudfront.DomainName
+  FullDomainName:
+    Description: Full Domain Name of my Application
+    Value: !Ref WayneDomainName

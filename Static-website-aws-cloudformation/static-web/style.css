@@ -1,0 +1,67 @@
+body{
+    background-color: black;
+    color: white;
+}
+.container{
+    /* border: 2px solid red; */
+    width: 80%;
+    margin: auto; /* mdivi ortaladı. center yaptı */
+    background-color: rgb(52, 50, 50);
+    /* border-radius: 20 px; */
+   
+}
+#title{
+    font-size: 90px;
+    text-align: center;
+}
+.heading{
+   font-family: 'Lobster', cursive;
+}
+#span1{
+    color: red;
+}
+#img-div{
+    /* border:2px rgb(47, 0, 255); */
+    text-align: center;
+}
+#image{
+    width: 350px;
+    margin: auto;
+    display: block;
+    box-shadow: 5px 5px 100px red;
+}
+#info{
+    /* border: 2px solid red; */
+    width: 80%;
+    margin: auto;
+    text-align:justify;
+    font-size: 24px;
+}
+#marvel{
+    color: red;
+    margin-left: 10%;
+}
+ul{
+    width: 80%;
+    margin: auto;
+
+}
+li{
+    font-size: 20px;
+    line-height: 3rem;
+}
+#footer{
+    margin: 10px;
+    padding: 1rem;
+    font-size: 16px;
+}
+#link:hover{
+    background-color: blue;
+    color: orange;
+    text-decoration: none;
+   
+
+}
+
+
+

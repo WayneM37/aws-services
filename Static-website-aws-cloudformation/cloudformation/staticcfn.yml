@@ -1,0 +1,58 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: |
+  This CloudFormation Template was written for
+  running John Wayne Static Website on EC2.
+  John Wayne Static Website will be
+  deployed on Amazon Linux 2
+  (ami-05fa00d4c63e32376) EC2 Instance with
+  custom security group which allows http
+  connections on port 80, 443 and ssh port 22 from
+  anywhere. John Wayne Static Website
+  is downloaded from my Public Github repository,
+  then deployed on Apache Web Server.
+Resources:
+  StaticwebsiteCFN:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: ami-05fa00d4c63e32376
+      InstanceType: t2.micro
+      KeyName: key1
+      SecurityGroups:
+        - !Ref Staticwebsec
+      Tags:
+        - Key: Name
+          Value: StaticwebCFN
+      UserData: 
+        Fn::Base64: |
+          #! /bin/bash
+          sudo yum update -y
+          sudo yum install -y httpd
+          sudo systemctl start httpd
+          sudo systemctl enable httpd
+          cd /var/www/html
+          sudo chmod -R 777 /var/www/html
+          curl https://raw.githubusercontent.com/WayneM37/Static-website-aws-cloudformation/main/static-web/index.html -o index.html
+          curl https://raw.githubusercontent.com/WayneM37/Static-website-aws-cloudformation/main/static-web/style.css -o style.css
+  Staticwebsec:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Enables SSH for CFN Instance # Required
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
+Outputs:
+  WebsiteURL:
+    Value: !Sub
+      - http://${PublicAddress}
+      - PublicAddress: !GetAtt StaticwebsiteCFN.PublicDnsName
+    Description: John Wayne Application URL
